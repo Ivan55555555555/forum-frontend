@@ -3,8 +3,18 @@ import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 export interface Post {
   id: number;
   title: string;
-  content: string;
-  authorId: number;
+  body: string;
+}
+
+export interface AuthRequest {
+  email: string;
+  password: string;
+}
+
+export interface AuthResponse {
+  id?: number;
+  email: string;
+  access_token?: string;
 }
 
 export const baseApi = createApi({
@@ -16,7 +26,25 @@ export const baseApi = createApi({
     getPosts: builder.query<Post[], void>({
       query: () => "/posts",
     }),
+    register: builder.mutation<AuthResponse, AuthRequest>({
+      query: (data) => ({
+        url: "/auth/register",
+        method: "POST",
+        body: data,
+      }),
+    }),
+    login: builder.mutation<AuthResponse, AuthRequest>({
+      query: (data) => ({
+        url: "/auth/login",
+        method: "POST",
+        body: data,
+      }),
+    }),
   }),
 });
 
-export const { useGetPostsQuery } = baseApi;
+export const {
+  useGetPostsQuery,
+  useRegisterMutation,
+  useLoginMutation,
+} = baseApi;
