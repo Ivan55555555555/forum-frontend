@@ -1,5 +1,6 @@
 import { useForm } from "react-hook-form";
 import { useRegisterMutation } from "../api/baseApi";
+import type { FetchBaseQueryError } from "@reduxjs/toolkit/query";
 
 type RegisterValues = {
   email: string;
@@ -7,38 +8,84 @@ type RegisterValues = {
 };
 
 export function RegisterForm() {
-  const { register, handleSubmit, reset } = useForm<RegisterValues>();
-  const [registerUser, { isLoading }] = useRegisterMutation();
+  const {
+    register,
+    handleSubmit,
+    setError,
+    reset,
+    formState: { errors, isValid, isDirty },
+  } = useForm<RegisterValues>({
+    mode: "onChange",
+  });
+
+  const [registerUser, { isLoading, isSuccess }] = useRegisterMutation();
 
   async function onSubmit(data: RegisterValues) {
-    const result = await registerUser(data);
-
-    if (result.data) {
-      alert(`Користувач ${result.data.email} успішно зареєструвався!`);
+    try {
+      await registerUser(data).unwrap();
       reset();
-    } else {
-      alert("Помилка реєстрації! Можливо, такий email вже існує або дані некоректні.");
+    } catch (error) {
+      const apiError = error as FetchBaseQueryError;
+      let message = "Не вдалося зареєструватися. Спробуйте ще раз";
+      if (apiError.status === 409) {
+        message = "Користувач з таким email вже існує";
+      } else if (
+        apiError.status === "FETCH_ERROR" ||
+        apiError.status === "TIMEOUT_ERROR"
+      ) {
+        message = "Не вдалося з'єднатися із сервером";
+      }
+      setError("root", { message });
     }
   }
 
   return (
-    <form className="auth-form" onSubmit={handleSubmit(onSubmit)}>
-      <h3>Реєстрація</h3>
+    <form onSubmit={handleSubmit(onSubmit)} noValidate>
       <input
         type="email"
         placeholder="Електронна пошта"
         required
-        {...register("email")}
+        {...register("email", {
+          required: "Введіть email",
+          maxLength: {
+            value: 256,
+            message: "E-mail занадто довгий",
+          },
+        })}
       />
+      {errors.email && <p>{errors.email.message}</p>}
+
       <input
         type="password"
         placeholder="Пароль"
         required
-        {...register("password")}
+        {...register("password", {
+          required: "Введіть пароль",
+          minLength: {
+            value: 6,
+            message: "Пароль має містити щонайменше 6 символів",
+          },
+        })}
       />
+      {errors.password && <p>{errors.password.message}</p>}
+
+      <p>
+        {!isDirty
+          ? "Заповніть форму"
+          : isValid
+            ? "Поля пройшли перевірку"
+            : "Перевірте дані"}
+      </p>
+
+      {errors.root && <p>{errors.root.message}</p>}
+
       <button type="submit" disabled={isLoading}>
-        {isLoading ? "Завантаження..." : "Зареєструватися"}
+        {isLoading ? "Реєстрація..." : "Зареєструватися"}
       </button>
+
+      {isSuccess && (
+        <p>Користувач успішно зареєстрований! Тепер ви можете увійти</p>
+      )}
     </form>
   );
 }

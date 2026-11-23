@@ -17,11 +17,18 @@ export interface AuthResponse {
   access_token?: string;
 }
 
+export interface UserResponse {
+  id: number;
+  email: string;
+}
+
 export const baseApi = createApi({
   reducerPath: "api",
   baseQuery: fetchBaseQuery({
     baseUrl: "http://localhost:8000/",
+    credentials: "include",
   }),
+  tagTypes: ["Me"],
   endpoints: (builder) => ({
     getPosts: builder.query<Post[], void>({
       query: () => "/posts",
@@ -39,6 +46,11 @@ export const baseApi = createApi({
         method: "POST",
         body: data,
       }),
+      invalidatesTags: ["Me"],
+    }),
+    getMe: builder.query<UserResponse, void>({
+      query: () => "/auth/me",
+      providesTags: ["Me"],
     }),
   }),
 });
@@ -47,4 +59,5 @@ export const {
   useGetPostsQuery,
   useRegisterMutation,
   useLoginMutation,
+  useGetMeQuery,
 } = baseApi;
