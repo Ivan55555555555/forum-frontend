@@ -30,7 +30,7 @@ function App() {
         <p>Постів поки що немає.</p>
       )}
       {!isLoading && !isError && posts.length > 0 && (
-        <PostList posts={posts} />
+        <PostList posts={posts} currentUserId={user?.id} />
       )}
     </div>
   );
